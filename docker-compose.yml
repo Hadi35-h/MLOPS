@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  # خدمة الـ API الخاص بالموديل
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: olist_mlops_api
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://qafza_user:qafza_password@db:5432/qafza_db
+    depends_on:
+      - db
+    restart: always
+
+  # خدمة قاعدة البيانات PostgreSQL
+  db:
+    image: postgres:16
+    container_name: qafza_postgres
+    environment:
+      POSTGRES_USER: qafza_user
+      POSTGRES_PASSWORD: qafza_password
+      POSTGRES_DB: qafza_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
+
+volumes:
+  postgres_data:

@@ -1,0 +1,16 @@
+app:
+  name: "Olist Delivery Prediction API"
+  version: "1.0.0"
+
+paths:
+  preprocessor_path: "artifacts/preprocessor.joblib"
+  model_path: "artifacts/final_model.joblib"
+
+database:
+  host: "127.0.0.1"
+  port: 5433
+  db_name: "qafza"
+  user: "postgres"
+
+model_params:
+  threshold: 0.5
