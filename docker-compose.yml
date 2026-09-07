@@ -11,8 +11,12 @@ services:
       - "8000:8000"
     environment:
       - DATABASE_URL=postgresql://qafza_user:qafza_password@db:5432/qafza_db
+    volumes:
+      - ./artifacts:/app/artifacts
+      - ./config:/app/config
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     restart: always
 
   # خدمة قاعدة البيانات PostgreSQL
@@ -27,6 +31,11 @@ services:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U qafza_user -d qafza_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     restart: always
 
 volumes:
