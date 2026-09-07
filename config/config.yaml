@@ -1,16 +1,32 @@
-app:
-  name: "Olist Delivery Prediction API"
+# مسارات الملفات
+paths:
+  model_path: "artifacts/final_model.joblib"
+  preprocessor_path: "artifacts/preprocessor.joblib"
+  raw_data: "data/raw/olist_orders_dataset.csv"
+  processed_train_data: "data/processed/train.csv"
+  processed_test_data: "data/processed/test.csv"
+  log_file: "artifacts/app.log"
+  drift_report: "artifacts/drift_report.html"
+
+# معلومات النموذج
+model_info:
+  name: "RandomForest_Delivery_Prediction"
   version: "1.0.0"
 
-paths:
-  preprocessor_path: "artifacts/preprocessor.joblib"
-  model_path: "artifacts/final_model.joblib"
+# سكيما المدخلات المتوقعة
+data_schema:
+  features:
+    - total_price
+    - total_freight
+    - total_items
+    - total_payment
+    - max_installments
+    - order_status
+    - order_approved_at
+    - order_delivered_carrier_date
+    - customer_state
 
-database:
-  host: "127.0.0.1"
-  port: 5433
-  db_name: "qafza"
-  user: "postgres"
 
+# أضف هذا القسم في نهاية ملف config/config.yaml
 model_params:
   threshold: 0.5

@@ -1,43 +1,26 @@
-import os
 import joblib
 import pandas as pd
-from src.utils import load_config, setup_logger
-
-logger = setup_logger("InferencePipeline")
+import yaml
+from src.utils import logger
 
 
 class Predictor:
-
     def __init__(self, config_path: str = "config/config.yaml"):
-        self.config = load_config(config_path)
+        with open(config_path, "r", encoding="utf-8") as f:
+            self.config = yaml.safe_load(f)
 
-        # تحميل الـ Artifacts
-        preprocessor_path = self.config["paths"]["preprocessor_path"]
-        model_path = self.config["paths"]["model_path"]
-
-        logger.info(f"تحميل الـ Preprocessor من: {preprocessor_path}")
-        self.preprocessor = joblib.load(preprocessor_path)
-
-        logger.info(f"تحميل الموديل من: {model_path}")
-        self.model = joblib.load(model_path)
-
+        # تحميل الموديل والـ Preprocessor
+        self.preprocessor = joblib.load(self.config["paths"]["preprocessor_path"])
+        self.model = joblib.load(self.config["paths"]["model_path"])
         self.threshold = self.config["model_params"]["threshold"]
+        logger.info("تم تحميل الموديل والـ Preprocessor بنجاح.")
 
-    def predict(self, raw_data: dict) -> dict:
-        """استقبال dict وتطبيق المعالجة ثم التوقع"""
-        # 1. تحويل المدخل إلى DataFrame
-        df = pd.DataFrame([raw_data])
+    def predict(self, df: pd.DataFrame):
+        # 1. تحويل البيانات باستخدام المحول المحفوظ مسبقاً
+        X_processed = self.preprocessor.transform(df)
 
-        # 2. تطبيق المعالجة (transform فقط من دون fit)
-        processed_data = self.preprocessor.transform(df)
+        # 2. التوقع وحساب الاحتمالية
+        probabilities = self.model.predict_proba(X_processed)[:, 1]
+        predictions = (probabilities >= self.threshold).astype(int)
 
-        # 3. حساب الاحتمالية والتوقع
-        probability = float(self.model.predict_proba(processed_data)[0][1])
-        prediction = int(probability >= self.threshold)
-
-        logger.info(f"تم التوقع بنجاح: is_late={prediction}, prob={probability:.4f}")
-
-        return {
-            "is_late": prediction,
-            "late_probability": round(probability, 4),
-        }
+        return predictions[0], float(probabilities[0])
