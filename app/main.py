@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from src.predict import Predictor
 from src.utils import setup_logger
 
-logger = setup_logger("FastAPIApp")
+logger = setup_logger("config/config.yaml", name="FastAPIApp")
 
 # إنشاء كائن التطبيق مع تفعيل التوثيق التلقائي
 app = FastAPI(
