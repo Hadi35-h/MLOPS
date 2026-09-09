@@ -3,6 +3,14 @@ import os
 import yaml
 
 
+# إعداد الـ Logger العام للمشروع
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+
+logger = logging.getLogger("olist_mlops")
+
+
 def setup_logger(config_path="config/config.yaml", name="MLOpsApp") -> logging.Logger:
     with open(config_path, "r", encoding="utf-8") as f:
         config = yaml.safe_load(f)
