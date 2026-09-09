@@ -1,7 +1,7 @@
 import os
 import pandas as pd
-from evidently.metric_preset import DataDriftPreset
-from evidently.report import Report
+from evidently import Report
+from evidently.legacy.metric_preset import DataDriftPreset
 
 
 def generate_drift_report(
