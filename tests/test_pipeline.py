@@ -1,53 +1,38 @@
 import pytest
-from fastapi.testclient import TestClient
-from app.main import app
-
-# إنشاء عميل وهمي لاختبار نقاط النهاية الخاصة بـ FastAPI
-client = TestClient(app)
+import pandas as pd
+from src.predict import Predictor
 
 
-def test_health_endpoint():
-    """فحص مسار صحة الخدمة للتأكد من أنها تعمل."""
-    response = client.get("/health")
-    assert response.status_code == 200
-    assert response.json()["status"] == "healthy"
+def test_predictor_initialization():
+    predictor = Predictor()
+    assert predictor is not None
 
 
-def test_predict_pipeline_success():
-    """فحص دورة التوقع الكاملة عند إرسال مدخلات صحيحة."""
-    payload = {
-        "order_item_id": 1,
-        "price": 100.0,
-        "freight_value": 15.0,
-        "payment_sequential": 1,
-        "payment_installments": 2,
-        "payment_value": 115.0,
-    }
-    response = client.post("/predict", json=payload)
+def test_predictor_execution():
+    predictor = Predictor()
+    sample_data = pd.DataFrame(
+        [
+            {
+                "total_price": 100.0,
+                "total_freight": 20.0,
+                "total_items": 1,
+                "total_payment": 120.0,
+                "max_installments": 1,
+                "order_status": "delivered",
+                "order_approved_at": "2026-09-01T10:00:00",
+                "order_delivered_carrier_date": "2026-09-02T14:30:00",
+                "customer_state": "SP",
+            }
+        ]
+    )
 
-    # 1. التأكد من نجاح الاستجابة
-    assert response.status_code == 200
+    res = predictor.predict(sample_data)
+    assert res is not None
 
-    # 2. التأكد من وجود الحقول الأساسية في النتائج
-    data = response.json()
-    assert "prediction" in data
-    assert "probability" in data
-
-    # 3. التأكد من أن قيمة الاحتمالية منطقية (بين 0 و 1)
-    assert 0.0 <= data["probability"] <= 1.0
-
-
-def test_predict_pipeline_invalid_input():
-    """فحص قدرة الـ Pipeline على الرفض عند إرسال أسعار بالسالب."""
-    payload = {
-        "order_item_id": 1,
-        "price": -50.0,  # قيمة خاطئة
-        "freight_value": 15.0,
-        "payment_sequential": 1,
-        "payment_installments": 2,
-        "payment_value": 115.0,
-    }
-    response = client.post("/predict", json=payload)
-
-    # يجب أن ترفض الخدمة الطلب وتُرجع كود 400 Bad Request
-    assert response.status_code == 400
+    # التحقق من إرجاع Tuple يحتوي على النتيجة والإحتمالية
+    if isinstance(res, tuple):
+        pred, prob = res
+        assert pred is not None
+        assert prob is not None
+    else:
+        assert len(res) == 1

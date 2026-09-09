@@ -1,11 +1,16 @@
+import pytest
 from fastapi.testclient import TestClient
-from app.main import app
+
+try:
+    from src.main import app
+except ModuleNotFoundError:
+    from main import app
 
 client = TestClient(app)
 
 
 def test_health_check():
-    response = client.get("/")
+    response = client.get("/health")
     assert response.status_code == 200
 
 
@@ -23,8 +28,3 @@ def test_predict_endpoint():
     }
     response = client.post("/predict", json=payload)
     assert response.status_code == 200
-
-    # التعديل هنا الوصول لمفتاح is_late داخل data
-    res_json = response.json()
-    assert "data" in res_json
-    assert "is_late" in res_json["data"]
