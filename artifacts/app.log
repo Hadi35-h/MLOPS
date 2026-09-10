@@ -20,3 +20,18 @@ Feature names seen at fit time, yet now missing:
 - customer_state_AP
 - customer_state_BA
 - ...
+2026-09-10 10:55:05,410 - FastAPIApp - ERROR - خطأ أثناء تحميل الموديل أو الـ Preprocessor: [Errno 2] No such file or directory: 'models/preprocessor.pkl'
+2026-09-10 10:56:37,940 - FastAPIApp - ERROR - خطأ أثناء تحميل الموديل أو الـ Preprocessor: [Errno 2] No such file or directory: 'models/preprocessor.pkl'
+2026-09-10 11:00:17,609 - FastAPIApp - ERROR - خطأ أثناء تحميل الموديل أو الـ Preprocessor: [Errno 2] No such file or directory: 'models/preprocessor.pkl'
+2026-09-10 11:03:29,981 - FastAPIApp - WARNING - لم يتم العثور على preprocessor.pkl، سيتم الاعتماد على النموذج مباشرة.
+2026-09-10 11:10:30,007 - FastAPIApp - INFO - تم تحميل النموذج والـ Preprocessor بنجاح.
+2026-09-10 11:13:08,691 - FastAPIApp - ERROR - فشلت عملية التوقع: could not convert string to float: 'delivered'
+2026-09-10 11:13:08,699 - FastAPIApp - ERROR - خطأ أثناء معالجة الطلب: could not convert string to float: 'delivered'
+2026-09-10 11:19:36,331 - FastAPIApp - WARNING - ملف preprocessor.pkl غير موجود، سيتم معالجة البيانات تلقائياً.
+2026-09-10 11:19:46,255 - FastAPIApp - ERROR - فشلت عملية التوقع: X has 8 features, but RandomForestClassifier is expecting 10 features as input.
+2026-09-10 11:19:46,257 - FastAPIApp - ERROR - خطأ أثناء معالجة الطلب: X has 8 features, but RandomForestClassifier is expecting 10 features as input.
+2026-09-10 11:20:07,422 - FastAPIApp - ERROR - فشلت عملية التوقع: X has 8 features, but RandomForestClassifier is expecting 10 features as input.
+2026-09-10 11:20:07,543 - FastAPIApp - ERROR - خطأ أثناء معالجة الطلب: X has 8 features, but RandomForestClassifier is expecting 10 features as input.
+2026-09-10 11:20:35,104 - FastAPIApp - ERROR - فشلت عملية التوقع: X has 8 features, but RandomForestClassifier is expecting 10 features as input.
+2026-09-10 11:20:35,105 - FastAPIApp - ERROR - خطأ أثناء معالجة الطلب: X has 8 features, but RandomForestClassifier is expecting 10 features as input.
+2026-09-10 11:24:47,060 - FastAPIApp - INFO - Successful prediction: {'prediction': 0}
