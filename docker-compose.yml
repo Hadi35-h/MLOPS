@@ -1,6 +1,7 @@
+version: '3.8'
+
 services:
-  # 1. قاعدة البيانات (استخدام صورة alpine المستقرة)
- # 1. قاعدة البيانات
+  # 1. قاعدة البيانات PostgreSQL
   postgres:
     image: postgres:15-alpine
     container_name: qafza_postgres
@@ -16,29 +17,35 @@ services:
       timeout: 5s
       retries: 5
 
-  # 2. تطبيق FastAPI
+  # 2. واجهة خادم MLflow
+  mlflow:
+    build: .
+    container_name: olist_mlflow
+    command: mlflow server --host 0.0.0.0 --port 5000 --allowed-hosts "*" --cors-allowed-origins "*" --backend-store-uri sqlite:///mlflow.db
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/app
+
+  # 3. تطبيق FastAPI والتدريب الآلي
   api:
     build: .
     container_name: olist_mlops_api
+    environment:
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
     command: >
       sh -c "python -m src.train &&
              python -m src.evidently_report &&
              uvicorn app.main:app --host 0.0.0.0 --port 8000"
     ports:
       - "8000:8000"
-
     depends_on:
       postgres:
         condition: service_healthy
-    environment:
-      - MLFLOW_TRACKING_URI=http://mlflow:5000
-  # 3. واجهة MLflow UI
-  mlflow:
-    build: .
-    container_name: olist_mlflow
-    command: mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri sqlite:///mlflow.db
-    ports:
-      - "5000:5000"
+      mlflow:
+        condition: service_started
+    volumes:
+      - .:/app
 
   # 4. واجهة Evidently UI
   evidently:
@@ -47,3 +54,5 @@ services:
     command: evidently ui --host 0.0.0.0 --port 8080
     ports:
       - "8080:8080"
+    volumes:
+      - .:/app

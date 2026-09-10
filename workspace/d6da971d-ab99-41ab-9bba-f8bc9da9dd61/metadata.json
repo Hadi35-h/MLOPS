@@ -1,0 +1,15 @@
+{
+  "id": "d6da971d-ab99-41ab-9bba-f8bc9da9dd61",
+  "name": "Olist Monitoring",
+  "description": null,
+  "dashboard": {
+    "name": "Olist Monitoring",
+    "panels": [],
+    "tabs": [],
+    "tab_id_to_panel_ids": {}
+  },
+  "team_id": null,
+  "date_from": null,
+  "date_to": null,
+  "created_at": "2026-09-10T08:06:24.569662"
+}
