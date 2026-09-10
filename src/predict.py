@@ -15,12 +15,20 @@ class Predictor:
         self.threshold = self.config["model_params"]["threshold"]
         logger.info("تم تحميل الموديل والـ Preprocessor بنجاح.")
 
-    def predict(self, df: pd.DataFrame):
-        # 1. تحويل البيانات باستخدام المحول المحفوظ مسبقاً
-        X_processed = self.preprocessor.transform(df)
+    def predict(self, data: dict):
+        # تحويل القاموس إلى DataFrame بحجم عينة واحدة (1 Row, N Columns)
+        df = pd.DataFrame([data])
 
-        # 2. التوقع وحساب الاحتمالية
-        probabilities = self.model.predict_proba(X_processed)[:, 1]
-        predictions = (probabilities >= self.threshold).astype(int)
+        # تحويل الأعمدة إذا كانت تحتاج لمعالجة تواريخ قبل المعالج
+        if "order_approved_at" in df.columns:
+            df["order_approved_at"] = pd.to_datetime(df["order_approved_at"])
+        if "order_delivered_carrier_date" in df.columns:
+            df["order_delivered_carrier_date"] = pd.to_datetime(
+                df["order_delivered_carrier_date"]
+            )
 
-        return predictions[0], float(probabilities[0])
+        # التوقع باستخدام الـ Pipeline أو Model
+        prediction = self.model.predict(df)
+
+        # إرجاع النتيجة
+        return {"prediction": int(prediction[0])}
