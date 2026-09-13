@@ -5,7 +5,7 @@ def preprocess_data(df: pd.DataFrame) -> pd.DataFrame:
     """تطبيق عمليات التنظيف والمعالجة الأولية على البيانات الخام."""
     df = df.copy()
 
-    # مثال: تحويل التواريخ إذا كانت موجودة
+    #  تحويل التواريخ إذا كانت موجودة
     date_cols = [col for col in df.columns if "date" in col or "timestamp" in col]
     for col in date_cols:
         df[col] = pd.to_datetime(df[col], errors="coerce")
