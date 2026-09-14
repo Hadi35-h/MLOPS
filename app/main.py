@@ -1,54 +1,49 @@
+import logging
+from pathlib import Path
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from src.predict import Predictor
-from src.utils import setup_logger
 
-logger = setup_logger("config/config.yaml", name="FastAPIApp")
+app = FastAPI(title="MLOps Prediction API")
 
-app = FastAPI(
-    title="Olist Delivery Prediction API",
-    description="API لتوقع تأخير شحنات طلبات Olist",
-    version="1.0.0",
-    docs_url="/docs",
-    redoc_url="/redoc",
-)
+BASE_DIR = Path(__file__).resolve().parent.parent
+MODEL_PATH = BASE_DIR / "models" / "model.pkl"
+PREPROCESSOR_PATH = BASE_DIR / "models" / "preprocessor.pkl"
 
-predictor = Predictor()
-
-
-# مخطط البيانات المدخلة مع تفعيل القيود الـ Validation
-class OrderInput(BaseModel):
-    total_price: float = Field(
-        ..., ge=0, description="السعر الاجمالي يجب أن يكون أكثر أو يساوي صفر"
+try:
+    predictor = Predictor(
+        model_path=str(MODEL_PATH), preprocessor_path=str(PREPROCESSOR_PATH)
     )
-    total_freight: float = Field(..., ge=0, description="تكلفة الشحن")
-    total_items: int = Field(..., ge=1, description="عدد القطع يجب أن يكون 1 على الأقل")
-    total_payment: float = Field(..., ge=0, description="قيمة الدفع")
-    max_installments: int = Field(..., ge=1, description="عدد الأقساط")
-    order_status: str = Field(..., example="delivered")
-    order_approved_at: str = Field(..., example="2017-09-03 08:43:00")
-    order_delivered_carrier_date: str = Field(..., example="2017-09-03 21:16:00")
-    customer_state: str = Field(..., min_length=2, max_length=2, example="SP")
+except Exception as e:
+    predictor = None
+
+
+class OrderInput(BaseModel):
+    total_price: float
+    total_freight: float
+    total_items: int
+    total_payment: float
+    max_installments: int
+    order_status: str
+    order_approved_at: str
+    order_delivered_carrier_date: str
+    customer_state: str
 
 
 @app.get("/")
-def health_check():
-    return {"status": "healthy", "message": "Olist Prediction API is running!"}
-
-
-@app.get("/health")
-def status_health():
-    # مسار health check إضافي مطابقة لمتطلبات التاسك
-    return {"status": "healthy", "model_version": "1.0.0"}
+def read_root():
+    return {"message": "API is up and running"}
 
 
 @app.post("/predict")
-def predict_delivery(order: OrderInput):
+def predict_endpoint(order: OrderInput):
+    if predictor is None:
+        raise HTTPException(status_code=500, detail="Predictor fail to load model.")
+
     try:
-        data = order.model_dump()
+        data = order.model_dump() if hasattr(order, "model_dump") else order.dict()
         result = predictor.predict(data)
-        logger.info(f"Successful prediction: {result}")
-        return {"status": "success", "data": result}
+        return result
     except Exception as e:
-        logger.error(f"خطأ أثناء معالجة الطلب: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"فشلت عملية التوقع: {str(e)}")
+        # إرجاع نص الاستثناء بدقة بدلاً من رمي خطأ مبهم
+        raise HTTPException(status_code=500, detail=f"Prediction Exception: {str(e)}")

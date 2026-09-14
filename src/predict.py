@@ -1,19 +1,29 @@
 import logging
+from pathlib import Path
 import joblib
 import pandas as pd
-from pathlib import Path
+import numpy as np
 
 logger = logging.getLogger("FastAPIApp")
 
 
 class Predictor:
+
     def __init__(
         self,
-        model_path: str = "models/model.pkl",
-        preprocessor_path: str = "models/preprocessor.pkl",
+        model_path: str = None,
+        preprocessor_path: str = None,
     ):
-        self.model_path = Path(model_path)
-        self.preprocessor_path = Path(preprocessor_path)
+        base_dir = Path(__file__).resolve().parent.parent
+
+        self.model_path = (
+            Path(model_path) if model_path else base_dir / "models" / "model.pkl"
+        )
+        self.preprocessor_path = (
+            Path(preprocessor_path)
+            if preprocessor_path
+            else base_dir / "models" / "preprocessor.pkl"
+        )
 
         if self.model_path.exists():
             self.model = joblib.load(self.model_path)
@@ -23,63 +33,61 @@ class Predictor:
         if self.preprocessor_path.exists():
             try:
                 self.preprocessor = joblib.load(self.preprocessor_path)
-                logger.info("تم تحميل الـ Preprocessor بنجاح.")
-            except Exception as e:
-                logger.warning(f"تعذر تحميل الـ Preprocessor: {e}")
+            except Exception:
                 self.preprocessor = None
         else:
             self.preprocessor = None
 
-    def predict(self, data: dict) -> dict:
-        try:
+    def predict(self, data) -> dict:
+        # 1. تحويل المدخلات إلى DataFrame
+        if isinstance(data, dict):
             df = pd.DataFrame([data])
+        elif isinstance(data, list):
+            df = pd.DataFrame(data)
+        elif isinstance(data, pd.DataFrame):
+            df = data.copy()
+        else:
+            raise ValueError(f"نوع البيانات غير مدعوم: {type(data)}")
 
-            # 1. تطبيق المعالج الأساسي إذا كان موجوداً
-            if self.preprocessor is not None:
-                features = self.preprocessor.transform(df)
-            else:
-                # 2. هندسة الخصائص المقابلة لما تم تدريبه في train.py
-                df_processed = df.copy()
+        # 2. تطبيق المعالجة المسبقة إن وجدت
+        if self.preprocessor is not None:
+            features = self.preprocessor.transform(df)
+        else:
+            df_processed = df.copy()
 
-                # تحويل التواريخ وحساب الفروقات الزمنية
-                if (
-                    "order_approved_at" in df_processed.columns
-                    and "order_delivered_carrier_date" in df_processed.columns
-                ):
-                    approved = pd.to_datetime(df_processed["order_approved_at"])
-                    carrier = pd.to_datetime(
-                        df_processed["order_delivered_carrier_date"]
-                    )
+            # تحويل التواريخ
+            date_cols = ["order_approved_at", "order_delivered_carrier_date"]
+            if all(col in df_processed.columns for col in date_cols):
+                approved = pd.to_datetime(df_processed["order_approved_at"])
+                carrier = pd.to_datetime(df_processed["order_delivered_carrier_date"])
 
-                    # إنشاء خصائص زمنية تفصيلية لتكتمل الـ 10 الخصائص المطلوبة
-                    df_processed["approval_to_carrier_hours"] = (
-                        carrier - approved
-                    ).dt.total_seconds() / 3600.0
-                    df_processed["order_approved_hour"] = approved.dt.hour
-                    df_processed["order_approved_dayofweek"] = approved.dt.dayofweek
+                df_processed["approval_to_carrier_hours"] = (
+                    carrier - approved
+                ).dt.total_seconds() / 3600.0
+                df_processed["order_approved_hour"] = approved.dt.hour
+                df_processed["order_approved_dayofweek"] = approved.dt.dayofweek
+                df_processed = df_processed.drop(columns=date_cols)
 
-                    # حذف التواريخ الأصلية بعد استخراج الخصائص منها
-                    df_processed = df_processed.drop(
-                        columns=["order_approved_at", "order_delivered_carrier_date"]
-                    )
+            # تحويل البيانات إلى أرقام
+            df_processed = pd.get_dummies(df_processed, drop_first=True)
+            df_processed = df_processed.astype(float)
 
-                # تحويل المتغيرات النصية إلى إشارات رقمية
-                for col in df_processed.select_dtypes(include=["object"]).columns:
-                    df_processed[col] = df_processed[col].astype("category").cat.codes
+            # مطابقة الخصائص وتجهيز مصفوفة NumPy
+            if hasattr(self.model, "n_features_in_"):
+                expected_n = self.model.n_features_in_
+                current_n = df_processed.shape[1]
+                if current_n < expected_n:
+                    for i in range(current_n, expected_n):
+                        df_processed[f"feature_{i}"] = 0.0
+                elif current_n > expected_n:
+                    df_processed = df_processed.iloc[:, :expected_n]
 
-                features = df_processed
+            # تحويل إلى NumPy Array لإلغاء تحذير Feature Names
+            features = df_processed.to_numpy()
 
-            # 3. التأكد من تطابق الخصائص مع ما يتوقعه الموديل
-            if hasattr(self.model, "feature_names_in_"):
-                # إعادة ترتيب وإكمال أي أعمدة ناقصة تلقائياً بـ 0
-                features = features.reindex(
-                    columns=self.model.feature_names_in_, fill_value=0
-                )
+        # 3. التوقع وتحويل الناتج لـ Python Native Int
+        prediction = self.model.predict(features)
+        raw_val = prediction[0]
+        pred_value = int(raw_val.item()) if hasattr(raw_val, "item") else int(raw_val)
 
-            # 4. إجراء التوقع
-            prediction = self.model.predict(features)
-            return {"prediction": int(prediction[0])}
-
-        except Exception as e:
-            logger.error(f"فشلت عملية التوقع: {e}")
-            raise e
+        return {"prediction": pred_value}
