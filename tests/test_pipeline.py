@@ -1,38 +1,42 @@
-import pytest
-import pandas as pd
-from src.predict import Predictor
+import sys
+from pathlib import Path
+from fastapi.testclient import TestClient
+
+# إضافة جذر المشروع إلى sys.path ديناميكياً
+BASE_DIR = Path(__file__).resolve().parent.parent
+if str(BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(BASE_DIR))
+
+from app.main import app
+
+client = TestClient(app)
 
 
-def test_predictor_initialization():
-    predictor = Predictor()
-    assert predictor is not None
+def test_read_root():
+    """اختبار مسار الصفحة الرئيسية"""
+    response = client.get("/")
+    assert response.status_code == 200
+    assert response.json() == {"message": "API is up and running"}
 
 
-def test_predictor_execution():
-    predictor = Predictor()
-    sample_data = pd.DataFrame(
-        [
-            {
-                "total_price": 100.0,
-                "total_freight": 20.0,
-                "total_items": 1,
-                "total_payment": 120.0,
-                "max_installments": 1,
-                "order_status": "delivered",
-                "order_approved_at": "2026-09-01T10:00:00",
-                "order_delivered_carrier_date": "2026-09-02T14:30:00",
-                "customer_state": "SP",
-            }
-        ]
-    )
+def test_predict_endpoint():
+    """اختبار التوقع وإظهار تفاصيل الخطأ إذا فشل الاستدعاء"""
+    payload = {
+        "total_price": 100.0,
+        "total_freight": 20.0,
+        "total_items": 1,
+        "total_payment": 120.0,
+        "max_installments": 1,
+        "order_status": "delivered",
+        "order_approved_at": "2026-09-01T10:00:00",
+        "order_delivered_carrier_date": "2026-09-02T14:30:00",
+        "customer_state": "SP",
+    }
+    response = client.post("/predict", json=payload)
 
-    res = predictor.predict(sample_data)
-    assert res is not None
+    # طباعة محتوى الخطأ فوراً في حال عدم إرجاع 200
+    if response.status_code != 200:
+        print("\n[SERVER ERROR DETAILED RESPONSE]:", response.text)
 
-    # التحقق من إرجاع Tuple يحتوي على النتيجة والإحتمالية
-    if isinstance(res, tuple):
-        pred, prob = res
-        assert pred is not None
-        assert prob is not None
-    else:
-        assert len(res) == 1
+    assert response.status_code == 200
+    assert "prediction" in response.json()

@@ -4,7 +4,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from src.predict import Predictor
 
-app = FastAPI(title="MLOps Prediction API")
+app = FastAPI()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 MODEL_PATH = BASE_DIR / "models" / "model.pkl"
@@ -15,6 +15,7 @@ try:
         model_path=str(MODEL_PATH), preprocessor_path=str(PREPROCESSOR_PATH)
     )
 except Exception as e:
+    logging.error(f"Failed to load predictor models: {e}")
     predictor = None
 
 
@@ -30,20 +31,16 @@ class OrderInput(BaseModel):
     customer_state: str
 
 
-@app.get("/")
-def read_root():
-    return {"message": "API is up and running"}
-
-
 @app.post("/predict")
 def predict_endpoint(order: OrderInput):
     if predictor is None:
-        raise HTTPException(status_code=500, detail="Predictor fail to load model.")
+        raise HTTPException(
+            status_code=500, detail="Predictor model files not found or failed to load."
+        )
 
     try:
         data = order.model_dump() if hasattr(order, "model_dump") else order.dict()
-        result = predictor.predict(data)
-        return result
+        res = predictor.predict(data)
+        return res
     except Exception as e:
-        # إرجاع نص الاستثناء بدقة بدلاً من رمي خطأ مبهم
-        raise HTTPException(status_code=500, detail=f"Prediction Exception: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))

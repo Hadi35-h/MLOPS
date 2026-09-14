@@ -39,7 +39,6 @@ class Predictor:
             self.preprocessor = None
 
     def predict(self, data) -> dict:
-        # 1. تحويل المدخلات إلى DataFrame
         if isinstance(data, dict):
             df = pd.DataFrame([data])
         elif isinstance(data, list):
@@ -49,13 +48,12 @@ class Predictor:
         else:
             raise ValueError(f"نوع البيانات غير مدعوم: {type(data)}")
 
-        # 2. تطبيق المعالجة المسبقة إن وجدت
         if self.preprocessor is not None:
             features = self.preprocessor.transform(df)
         else:
             df_processed = df.copy()
 
-            # تحويل التواريخ
+            # حساب فروق التواريخ
             date_cols = ["order_approved_at", "order_delivered_carrier_date"]
             if all(col in df_processed.columns for col in date_cols):
                 approved = pd.to_datetime(df_processed["order_approved_at"])
@@ -68,11 +66,10 @@ class Predictor:
                 df_processed["order_approved_dayofweek"] = approved.dt.dayofweek
                 df_processed = df_processed.drop(columns=date_cols)
 
-            # تحويل البيانات إلى أرقام
             df_processed = pd.get_dummies(df_processed, drop_first=True)
             df_processed = df_processed.astype(float)
 
-            # مطابقة الخصائص وتجهيز مصفوفة NumPy
+            # مطابقة أعداد الخصائص مع النموذج
             if hasattr(self.model, "n_features_in_"):
                 expected_n = self.model.n_features_in_
                 current_n = df_processed.shape[1]
@@ -82,10 +79,8 @@ class Predictor:
                 elif current_n > expected_n:
                     df_processed = df_processed.iloc[:, :expected_n]
 
-            # تحويل إلى NumPy Array لإلغاء تحذير Feature Names
             features = df_processed.to_numpy()
 
-        # 3. التوقع وتحويل الناتج لـ Python Native Int
         prediction = self.model.predict(features)
         raw_val = prediction[0]
         pred_value = int(raw_val.item()) if hasattr(raw_val, "item") else int(raw_val)

@@ -4,7 +4,7 @@ WORKDIR /app
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-
+ENV PYTHONPATH=/app
 COPY requirements.txt .
 
 # رفع المهلة إلى 1000 ثانية وإضافة خيارات إعادة المحاولة للتعامل مع بطء الإنترنت

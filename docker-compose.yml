@@ -4,42 +4,53 @@ services:
   postgres:
     image: postgres:15-alpine
     container_name: qafza_postgres
+    restart: always
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: olist_db
+      POSTGRES_USER: mlops_user
+      POSTGRES_PASSWORD: mlops_password
+      POSTGRES_DB: mlops_db
     ports:
       - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d olist_db"]
+      test: ["CMD-SHELL", "pg_isready -U mlops_user -d mlops_db"]
       interval: 5s
       timeout: 5s
       retries: 5
 
-  api:
-    build: .
-    container_name: olist_mlops_api
-    environment:
-      - MLFLOW_TRACKING_URI=http://mlflow:5000
-    command: >
-      sh -c "python -m src.evidently_report &&
-             uvicorn app.main:app --host 0.0.0.0 --port 8000"
-    ports:
-      - "8000:8000"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    volumes:
-      - .:/app
-
   mlflow:
     build: .
     container_name: olist_mlflow
-    command: mlflow server --host 0.0.0.0 --port 5000 --allowed-hosts "*" --cors-allowed-origins "*" --backend-store-uri sqlite:///mlflow.db
+    command: >
+      mlflow server
+      --backend-store-uri postgresql://mlops_user:mlops_password@postgres:5432/mlops_db
+      --default-artifact-root /app/mlruns
+      --host 0.0.0.0
+      --port 5000
     ports:
       - "5000:5000"
     volumes:
       - .:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    build: .
+    container_name: olist_mlops_api
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    environment:
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mlflow:
+        condition: service_started
 
   evidently:
     build: .
@@ -49,3 +60,8 @@ services:
       - "8080:8080"
     volumes:
       - .:/app
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:
