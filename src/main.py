@@ -40,6 +40,8 @@ def predict(data: OrderInput):
                 ),
             }
 
+        if isinstance(res, dict):
+            return res
         return {"prediction": res.tolist()}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
