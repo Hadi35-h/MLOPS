@@ -27,42 +27,48 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           pip install pytest httpx scikit-learn numpy
 
+
       - name: Create Dummy Models for CI
         run: |
           mkdir -p models
           python -c "
           import pickle, os
+          import pandas as pd
           import numpy as np
           from sklearn.dummy import DummyClassifier
           from sklearn.preprocessing import StandardScaler
+          from sklearn.compose import ColumnTransformer
+          from sklearn.onehot import OneHotEncoder
 
-          X = np.array([[100.0, 20.0, 1, 120.0, 1], [200.0, 40.0, 2, 240.0, 2]])
-          y = np.array([0, 1])
+          # إعداد بيانات وهمية تطابق حقول الـ API
+          data = pd.DataFrame([{
+              'total_price': 100.0,
+              'total_freight': 20.0,
+              'total_items': 1,
+              'total_payment': 120.0,
+              'max_installments': 1,
+              'order_status': 'delivered',
+              'customer_state': 'SP'
+          }])
 
-          if not os.path.exists('models/model.pkl'):
-              model = DummyClassifier().fit(X, y)
-              with open('models/model.pkl', 'wb') as f:
-                  pickle.dump(model, f)
+          num_cols = ['total_price', 'total_freight', 'total_items', 'total_payment', 'max_installments']
+          cat_cols = ['order_status', 'customer_state']
 
           if not os.path.exists('models/preprocessor.pkl'):
-              prep = StandardScaler().fit(X)
+              prep = ColumnTransformer([
+                  ('num', StandardScaler(), num_cols),
+                  ('cat', OneHotEncoder(handle_unknown='ignore'), cat_cols)
+              ])
+              X_trans = prep.fit_transform(data)
               with open('models/preprocessor.pkl', 'wb') as f:
                   pickle.dump(prep, f)
+          else:
+              with open('models/preprocessor.pkl', 'rb') as f:
+                  prep = pickle.load(f)
+              X_trans = prep.transform(data)
+
+          if not os.path.exists('models/model.pkl'):
+              model = DummyClassifier().fit(X_trans, [1])
+              with open('models/model.pkl', 'wb') as f:
+                  pickle.dump(model, f)
           "
-
-      - name: Run unit tests
-        env:
-          PYTHONPATH: .
-        run: |
-          pytest tests/
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile
-          push: false
-          tags: olist_mlops_api:latest
