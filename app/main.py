@@ -21,6 +21,11 @@ except Exception as e:
     predictor = None
 
 
+@app.get("/")
+def read_root():
+    return {"message": "Welcome to MLOps API"}
+
+
 @app.get("/healthcheck")
 def healthcheck():
     return {"status": "ok", "model_loaded": predictor is not None}

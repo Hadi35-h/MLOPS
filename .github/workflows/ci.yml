@@ -27,7 +27,28 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          pip install pytest httpx
+          pip install pytest httpx scikit-learn
+
+      # 3.5 إنشاء نماذج مؤقتة في حال عدم رفع ملفات .pkl على GitHub
+      - name: Create Dummy Models for CI
+        run: |
+          mkdir -p models
+          python -c "
+          import pickle, os
+          from sklearn.dummy import DummyClassifier
+          from sklearn.preprocessing import StandardScaler
+
+          if not os.path.exists('models/model.pkl'):
+              X, y = [[1, 2, 3, 4, 5, 1, 1, 1, 1]], [1]
+              model = DummyClassifier().fit(X, y)
+              with open('models/model.pkl', 'wb') as f:
+                  pickle.dump(model, f)
+
+          if not os.path.exists('models/preprocessor.pkl'):
+              prep = StandardScaler()
+              with open('models/preprocessor.pkl', 'wb') as f:
+                  pickle.dump(prep, f)
+          "
 
       # 4. تشغيل الاختبارات تلقائياً (CI)
       - name: Run unit tests
