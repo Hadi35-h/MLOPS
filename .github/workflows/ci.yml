@@ -1,23 +1,71 @@
-# 3.5 إنشاء نماذج مؤقتة مدربة جاهزة للاختبار
+name: MLOps CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. جلب الكود من GitHub
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. إعداد بيئة Python
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      # 3. تثبيت الاعتماديات
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install pytest httpx scikit-learn
+
+      # 3.5 إنشاء نماذج مؤقتة في حال عدم رفع ملفات .pkl على GitHub
       - name: Create Dummy Models for CI
         run: |
           mkdir -p models
           python -c "
           import pickle, os
-          import numpy as np
           from sklearn.dummy import DummyClassifier
           from sklearn.preprocessing import StandardScaler
 
           if not os.path.exists('models/model.pkl'):
-              X = np.array([[100.0, 20.0, 1, 120.0, 1]])
-              y = np.array([1])
+              X, y = [[1, 2, 3, 4, 5, 1, 1, 1, 1]], [1]
               model = DummyClassifier().fit(X, y)
               with open('models/model.pkl', 'wb') as f:
                   pickle.dump(model, f)
 
           if not os.path.exists('models/preprocessor.pkl'):
-              X = np.array([[100.0, 20.0, 1, 120.0, 1]])
-              prep = StandardScaler().fit(X)
+              prep = StandardScaler()
               with open('models/preprocessor.pkl', 'wb') as f:
                   pickle.dump(prep, f)
           "
+
+      # 4. تشغيل الاختبارات تلقائياً (CI)
+      - name: Run unit tests
+        env:
+          PYTHONPATH: .
+        run: |
+          pytest tests/
+
+      # 5. إعداد Docker Buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # 6. بناء صورة Docker بدون رفعها (للتأكد من سلامة البناء)
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: olist_mlops_api:latest
