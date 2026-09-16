@@ -6,6 +6,15 @@
 <img src="https://img.shields.io/badge/mlflow-3.16-orange" alt="MLflow">
 <img src="https://img.shields.io/badge/sklearn-1.9-red" alt="Scikit-learn">
 
+## 🔗 Quick Links
+
+- [GitHub Repository](https://github.com/Hadi35-h/MLOPS)
+- [API Documentation (Swagger UI)](http://localhost:8000/docs)
+- [API Reference (Redoc)](http://localhost:8000/redoc)
+- [MLflow Tracking UI](http://localhost:5000)
+- [Evidently Drift Monitor](http://localhost:8080)
+- [Docker Hub Images](https://hub.docker.com/)
+
 ---
 
 ## 🎯 Project Overview
