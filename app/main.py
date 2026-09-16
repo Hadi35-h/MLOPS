@@ -2,7 +2,6 @@ import logging
 from pathlib import Path
 from fastapi import FastAPI, HTTPException
 
-# استيراد الـ Schema من الملف الجديد
 from app.schemas import OrderInput, PredictionOutput
 from src.predict import Predictor
 
@@ -12,13 +11,23 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 MODEL_PATH = BASE_DIR / "models" / "model.pkl"
 PREPROCESSOR_PATH = BASE_DIR / "models" / "preprocessor.pkl"
 
-try:
-    predictor = Predictor(
-        model_path=str(MODEL_PATH), preprocessor_path=str(PREPROCESSOR_PATH)
-    )
-except Exception as e:
-    logging.error(f"Failed to load predictor models: {e}")
-    predictor = None
+predictor = None
+
+
+def load_models():
+    """دالة تحكم لإعادة تحميل النماذج ديناميكياً من الذاكرة/الملفات"""
+    global predictor
+    try:
+        predictor = Predictor(
+            model_path=str(MODEL_PATH), preprocessor_path=str(PREPROCESSOR_PATH)
+        )
+    except Exception as e:
+        logging.error(f"Failed to load predictor models: {e}")
+        predictor = None
+
+
+# تحميل النماذج عند بدء التطبيق
+load_models()
 
 
 @app.get("/")
@@ -33,13 +42,20 @@ def healthcheck():
 
 @app.post("/predict", response_model=PredictionOutput)
 def predict_endpoint(order: OrderInput):
+    # محاولة إعادة التحميل إذا كان الكائن None قبل إرجاع الخطأ
+    if predictor is None:
+        load_models()
+
     if predictor is None:
         raise HTTPException(
-            status_code=500, detail="Predictor model files not found or failed to load."
+            status_code=500,
+            detail="Predictor model files not found or failed to load.",
         )
 
     try:
-        data = order.model_dump() if hasattr(order, "model_dump") else order.dict()
+        data = (
+            order.model_dump() if hasattr(order, "model_dump") else order.dict()
+        )
         res = predictor.predict(data)
         return res
     except Exception as e:
