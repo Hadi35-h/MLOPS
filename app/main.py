@@ -23,7 +23,7 @@ except Exception as e:
 
 @app.get("/")
 def read_root():
-    return {"message": "Welcome to MLOps API"}
+    return {"message": "API is up and running"}
 
 
 @app.get("/healthcheck")
