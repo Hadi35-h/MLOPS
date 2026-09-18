@@ -91,3 +91,6 @@ jobs:
           file: ./Dockerfile
           push: false
           tags: olist_mlops_api:latest
+      - name: Run Data Quality Check (Great Expectations)
+        run: |
+         python validate_data.py
