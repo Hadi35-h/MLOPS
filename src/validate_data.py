@@ -3,6 +3,10 @@ import sys
 import great_expectations as gx
 import pandas as pd
 
+# Ensure UTF-8 output on Windows consoles (emoji support)
+if sys.stdout.encoding != "utf-8":
+    sys.stdout.reconfigure(encoding="utf-8")
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_PATH = BASE_DIR / "data" / "processed" / "train.csv"
 
