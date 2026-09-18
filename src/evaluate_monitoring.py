@@ -58,8 +58,8 @@ def evaluate_predictions():
 
     print(f"📊 Total predictions logged: {len(df_current)}")
 
-    # Use the raw dataset as reference for comparison
-    ref_data_path = BASE_DIR / "data" / "raw" / "olist_order_items_dataset.csv"
+    # Use the processed training data as reference for comparison
+    ref_data_path = BASE_DIR / "data" / "processed" / "train.csv"
 
     if ref_data_path.exists():
         df_reference = pd.read_csv(ref_data_path)
@@ -70,6 +70,10 @@ def evaluate_predictions():
         if not common_cols:
             print("❌ No common columns between reference data and current logs.")
             return
+
+        # Sample reference data to speed up drift detection on large datasets
+        if len(df_reference) > 1000:
+            df_reference = df_reference.sample(n=1000, random_state=42)
 
         # Create the report using DataDriftPreset
         if Report is None or DataDriftPreset is None:
