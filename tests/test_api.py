@@ -28,3 +28,50 @@ def test_predict_endpoint():
     }
     response = client.post("/predict", json=payload)
     assert response.status_code == 200
+
+
+def test_predict_negative_price():
+    payload = {
+        "total_price": -100.0,
+        "total_freight": 20.0,
+        "total_items": 1,
+        "total_payment": 120.0,
+        "max_installments": 1,
+        "order_status": "delivered",
+        "order_approved_at": "2026-09-01T10:00:00",
+        "order_delivered_carrier_date": "2026-09-02T14:30:00",
+        "customer_state": "SP",
+    }
+    response = client.post("/predict", json=payload)
+    assert response.status_code == 422
+
+
+def test_predict_customer_state_too_long():
+    payload = {
+        "total_price": 100.0,
+        "total_freight": 20.0,
+        "total_items": 1,
+        "total_payment": 120.0,
+        "max_installments": 1,
+        "order_status": "delivered",
+        "order_approved_at": "2026-09-01T10:00:00",
+        "order_delivered_carrier_date": "2026-09-02T14:30:00",
+        "customer_state": "SPX",
+    }
+    response = client.post("/predict", json=payload)
+    assert response.status_code == 422
+
+
+def test_predict_missing_field():
+    payload = {
+        "total_price": 100.0,
+        "total_freight": 20.0,
+        "total_items": 1,
+        "total_payment": 120.0,
+        "max_installments": 1,
+        "order_status": "delivered",
+        "order_approved_at": "2026-09-01T10:00:00",
+        "order_delivered_carrier_date": "2026-09-02T14:30:00",
+    }
+    response = client.post("/predict", json=payload)
+    assert response.status_code == 422

@@ -220,10 +220,17 @@ source venv/bin/activate
 # 3. Install dependencies
 pip install -r requirements.txt
 
-# 4. (Optional) Install pre-commit hooks
+# 4. Train the model (creates models/model.pkl + models/preprocessor.pkl)
+python -m src.train
+
+# 5. (Optional) Install pre-commit hooks
 pip install pre-commit
 pre-commit install
 ```
+
+> **Important:** Run `python -m src.train` **before** the API or tests — model artifacts
+> are not tracked in git (`.gitignore` excludes `models/*.pkl`). The CI pipeline
+> creates dummy models automatically before running tests.
 
 ---
 

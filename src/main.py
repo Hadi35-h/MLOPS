@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from fastapi import FastAPI, HTTPException
 import pandas as pd
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator, Field
 from src.predict import Predictor
 
 app = FastAPI()
@@ -34,15 +34,26 @@ load_predictor()
 
 
 class OrderInput(BaseModel):
-    total_price: float
-    total_freight: float
-    total_items: int
-    total_payment: float
-    max_installments: int
-    order_status: str
-    order_approved_at: str
-    order_delivered_carrier_date: str
-    customer_state: str
+    total_price: float = Field(..., gt=0)
+    total_freight: float = Field(..., ge=0)
+    total_items: int = Field(..., ge=1)
+    total_payment: float = Field(..., gt=0)
+    max_installments: int = Field(..., ge=0)
+    order_status: str = Field(..., min_length=1)
+    order_approved_at: str = Field(..., min_length=1)
+    order_delivered_carrier_date: str = Field(..., min_length=1)
+    customer_state: str = Field(..., min_length=2, max_length=2)
+
+    @field_validator("order_approved_at", "order_delivered_carrier_date")
+    @classmethod
+    def validate_date_format(cls, v):
+        from datetime import datetime as dt
+
+        try:
+            dt.fromisoformat(v)
+        except ValueError:
+            raise ValueError("Invalid ISO format datetime string")
+        return v
 
 
 def log_prediction(input_data: dict, prediction_result: dict):
