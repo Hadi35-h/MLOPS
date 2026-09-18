@@ -1,0 +1,22 @@
+repos:
+  # فحص الأخطاء والتنسيق الأساسي لـ Git
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace       # إزالة المساحات الزائدة في نهايات الأسطر
+      - id: end-of-file-fixer         # التأكد من وجود سطر فارغ بنهاية كل ملف
+      - id: check-yaml                # التأكد من صحة ملفات YAML
+      - id: check-added-large-files   # منع رفع الملفات الضخمة بالخطأ
+
+  # تنسيق الكود باستخدام Black
+  - repo: https://github.com/psf/black
+    rev: 24.4.2
+    hooks:
+      - id: black
+
+  # فحص معايير الجودة و Linting باستخدام Flake8
+  - repo: https://github.com/pycqa/flake8
+    rev: 7.0.0
+    hooks:
+      - id: flake8
+        args: [--max-line-length=88] # محاذاة طول السطر مع Black

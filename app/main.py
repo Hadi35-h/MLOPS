@@ -53,9 +53,7 @@ def predict_endpoint(order: OrderInput):
         )
 
     try:
-        data = (
-            order.model_dump() if hasattr(order, "model_dump") else order.dict()
-        )
+        data = order.model_dump() if hasattr(order, "model_dump") else order.dict()
         res = predictor.predict(data)
         return res
     except Exception as e:
