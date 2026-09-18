@@ -2,18 +2,18 @@ from pydantic import BaseModel, Field
 
 
 class OrderInput(BaseModel):
-    total_price: float = Field(..., gt=0, description="يجب أن يكون السعر أكبر من 0")
+    total_price: float = Field(..., gt=0, description="Price must be greater than 0")
     total_freight: float = Field(
-        ..., ge=0, description="تكلفة الشحن لا يمكن أن تكون سالبة"
+        ..., ge=0, description="Freight cost cannot be negative"
     )
     total_items: int = Field(
-        ..., gt=0, description="عدد العناصر يجب أن يكون 1 على الأقل"
+        ..., gt=0, description="Number of items must be at least 1"
     )
     total_payment: float = Field(
-        ..., gt=0, description="المبلغ المدفوع يجب أن يكون أكبر من 0"
+        ..., gt=0, description="Payment amount must be greater than 0"
     )
     max_installments: int = Field(
-        ..., ge=1, description="عدد الأقساط يجب أن يكون 1 على الأقل"
+        ..., ge=1, description="Number of installments must be at least 1"
     )
 
     order_status: str
@@ -25,9 +25,9 @@ class OrderInput(BaseModel):
         min_length=2,
         max_length=2,
         pattern="^[A-Z]{2}$",
-        description="رمز الولاية يجب أن يتكون من حرفين كبيرين بالإنجليزية فقط",
+        description="State code must be exactly two uppercase English letters",
     )
 
 
 class PredictionOutput(BaseModel):
-    prediction: float = Field(..., description="قيمة التوقع الناتجة من النموذج")
+    prediction: float = Field(..., description="Prediction value output by the model")

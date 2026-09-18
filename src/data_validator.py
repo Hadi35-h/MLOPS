@@ -3,10 +3,10 @@ import pandas as pd
 
 
 def validate_input_data(data: Dict) -> Tuple[bool, str]:
-    """فحص البيانات المدخلة للتأكد من خلوها من القيم الخاطئة أو الناقصة."""
+    """Validate input data to ensure it is free of incorrect or missing values."""
     df = pd.DataFrame([data])
 
-    # 1. التحقق من الأعمدة الحسابية ألا تكون بالسالب
+    # 1. Check that numeric columns are not negative
     numeric_checks = [
         col
         for col in df.columns
@@ -16,7 +16,7 @@ def validate_input_data(data: Dict) -> Tuple[bool, str]:
         if (df[col] < 0).any():
             return False, f"Invalid negative value in field: {col}"
 
-    # 2. التحقق من القيم الناقصة
+    # 2. Check for missing values
     if df.isnull().any().any():
         return False, "Missing values found in input data"
 

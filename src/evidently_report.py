@@ -24,14 +24,14 @@ def generate_report():
         }
     )
 
-    # إنشاء التقرير
+    # Create the report
     report = Report(metrics=[DataDriftPreset()])
     report.run(reference_data=reference_data, current_data=current_data)
 
-    # حفظ نسخة محلياً
+    # Save a local copy
     report.save_html("data_drift_report.html")
 
-    # إرسال التقرير إلى حاوية Evidently UI عبر شبكة Docker الداخلية
+    # Send report to Evidently UI via Docker internal network
     try:
         ws = RemoteWorkspace("http://evidently:8080")
         projects = ws.search_project("Olist Monitoring")

@@ -15,7 +15,7 @@ predictor = None
 
 
 def load_models():
-    """دالة تحكم لإعادة تحميل النماذج ديناميكياً من الذاكرة/الملفات"""
+    """Control function to dynamically reload models from memory/files."""
     global predictor
     try:
         predictor = Predictor(
@@ -26,7 +26,7 @@ def load_models():
         predictor = None
 
 
-# تحميل النماذج عند بدء التطبيق
+# Load models at application startup
 load_models()
 
 
@@ -42,7 +42,7 @@ def healthcheck():
 
 @app.post("/predict", response_model=PredictionOutput)
 def predict_endpoint(order: OrderInput):
-    # محاولة إعادة التحميل إذا كان الكائن None قبل إرجاع الخطأ
+    # Attempt reload if predictor is None before returning error
     if predictor is None:
         load_models()
 

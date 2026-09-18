@@ -9,7 +9,7 @@ def generate_drift_report(
     current_path: str,
     output_path: str = "artifacts/drift_report.html",
 ):
-    """إنشاء تقرير انحراف البيانات بين بيانات التدريب والبيانات الحالية."""
+    """Generate a data drift report comparing training data to current data."""
     reference_df = pd.read_csv(reference_path)
     current_df = pd.read_csv(current_path)
 
@@ -18,9 +18,9 @@ def generate_drift_report(
 
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     report.save_html(output_path)
-    print(f"تم إنشاء تقرير انحراف البيانات بنجاح في: {output_path}")
+    print(f"Data drift report generated successfully at: {output_path}")
 
 
 if __name__ == "__main__":
-    # تشغيل تجريبي في حال توفر الملفات
+    # Run only if data files are available
     pass

@@ -1,4 +1,4 @@
-# مسارات الملفات
+# File paths
 paths:
   model_path: "artifacts/final_model.joblib"
   preprocessor_path: "artifacts/preprocessor.joblib"
@@ -8,12 +8,12 @@ paths:
   log_file: "artifacts/app.log"
   drift_report: "artifacts/drift_report.html"
 
-# معلومات النموذج
+# Model information
 model_info:
   name: "RandomForest_Delivery_Prediction"
   version: "1.0.0"
 
-# سكيما المدخلات المتوقعة
+# Expected input schema
 data_schema:
   features:
     - total_price
@@ -27,6 +27,6 @@ data_schema:
     - customer_state
 
 
-# أضف هذا القسم في نهاية ملف config/config.yaml
+# Add this section at the end of the config file
 model_params:
   threshold: 0.5

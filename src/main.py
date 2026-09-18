@@ -30,7 +30,7 @@ def predict(data: OrderInput):
         df = pd.DataFrame([data.model_dump()])
         res = predictor.predict(df)
 
-        # استخراج القيم بشكل فردي إذا كان العائد Tuple
+        # Extract values individually if the return is a Tuple
         if isinstance(res, tuple):
             pred, prob = res
             return {

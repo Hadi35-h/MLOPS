@@ -2,7 +2,7 @@ import sys
 from pathlib import Path
 from fastapi.testclient import TestClient
 
-# إضافة جذر المشروع إلى sys.path ديناميكياً
+# Dynamically add project root to sys.path
 BASE_DIR = Path(__file__).resolve().parent.parent
 if str(BASE_DIR) not in sys.path:
     sys.path.insert(0, str(BASE_DIR))
@@ -13,14 +13,14 @@ client = TestClient(app)
 
 
 def test_read_root():
-    """اختبار مسار الصفحة الرئيسية"""
+    """Test the root path"""
     response = client.get("/")
     assert response.status_code == 200
     assert response.json() == {"message": "API is up and running"}
 
 
 def test_predict_endpoint():
-    """اختبار التوقع وإظهار تفاصيل الخطأ إذا فشل الاستدعاء"""
+    """Test prediction and show error details if the call fails"""
     payload = {
         "total_price": 100.0,
         "total_freight": 20.0,
@@ -34,7 +34,7 @@ def test_predict_endpoint():
     }
     response = client.post("/predict", json=payload)
 
-    # طباعة محتوى الخطأ فوراً في حال عدم إرجاع 200
+    # Print error response immediately if not returning 200
     if response.status_code != 200:
         print("\n[SERVER ERROR DETAILED RESPONSE]:", response.text)
 

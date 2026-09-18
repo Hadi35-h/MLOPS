@@ -3,7 +3,7 @@ import os
 import yaml
 
 
-# إعداد الـ Logger العام للمشروع
+# Global logger setup for the project
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
@@ -29,7 +29,7 @@ def setup_logger(config_path="config/config.yaml", name="MLOpsApp") -> logging.L
         handler.setFormatter(formatter)
         logger.addHandler(handler)
 
-        # إضافة StreamHandler للطباعة على الـ Console أيضاً
+        # Add StreamHandler for console output as well
         console_handler = logging.StreamHandler()
         console_handler.setFormatter(formatter)
         logger.addHandler(console_handler)

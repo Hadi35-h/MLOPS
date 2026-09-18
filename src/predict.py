@@ -28,7 +28,7 @@ class Predictor:
         if self.model_path.exists():
             self.model = joblib.load(self.model_path)
         else:
-            raise FileNotFoundError(f"ملف النموذج غير موجود: {self.model_path}")
+            raise FileNotFoundError(f"Model file not found: {self.model_path}")
 
         if self.preprocessor_path.exists():
             try:
@@ -46,14 +46,14 @@ class Predictor:
         elif isinstance(data, pd.DataFrame):
             df = data.copy()
         else:
-            raise ValueError(f"نوع البيانات غير مدعوم: {type(data)}")
+            raise ValueError(f"Unsupported data type: {type(data)}")
 
         if self.preprocessor is not None:
             features = self.preprocessor.transform(df)
         else:
             df_processed = df.copy()
 
-            # حساب فروق التواريخ
+            # Calculate date differences
             date_cols = ["order_approved_at", "order_delivered_carrier_date"]
             if all(col in df_processed.columns for col in date_cols):
                 approved = pd.to_datetime(df_processed["order_approved_at"])
@@ -69,7 +69,7 @@ class Predictor:
             df_processed = pd.get_dummies(df_processed, drop_first=True)
             df_processed = df_processed.astype(float)
 
-            # مطابقة أعداد الخصائص مع النموذج
+            # Match the number of features with the model
             if hasattr(self.model, "n_features_in_"):
                 expected_n = self.model.n_features_in_
                 current_n = df_processed.shape[1]

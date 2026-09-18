@@ -12,25 +12,25 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. جلب الكود من المستودع
+      # 1. Checkout the repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. إعداد بيئة Python
+      # 2. Set up Python environment
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
           cache: "pip"
 
-      # 3. تثبيت الاعتماديات والمكتبات المطلوبة
+      # 3. Install dependencies and required libraries
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           pip install pytest httpx scikit-learn numpy pandas
 
-      # 4. إنشاء نماذج وهمية متناسقة الأبعاد لتفادي خطأ 500 في بيئة الاختبار
+      # 4. Create dummy models with matching dimensions to avoid 500 error in test environment
       - name: Create Dummy Models for CI
         run: |
           mkdir -p models
@@ -42,7 +42,7 @@ jobs:
           from sklearn.preprocessing import StandardScaler, OneHotEncoder
           from sklearn.compose import ColumnTransformer
 
-          # إعداد بيانات وهمية تطابق جميع أعمدة المدخلات الخاصة بالـ API
+          # Prepare dummy data matching all API input columns
           data = pd.DataFrame([{
               'total_price': 100.0,
               'total_freight': 20.0,
@@ -56,7 +56,7 @@ jobs:
           num_cols = ['total_price', 'total_freight', 'total_items', 'total_payment', 'max_installments']
           cat_cols = ['order_status', 'customer_state']
 
-          # إنشاء وتكييف الـ Preprocessor
+          # Create and fit the Preprocessor
           prep = ColumnTransformer([
               ('num', StandardScaler(), num_cols),
               ('cat', OneHotEncoder(handle_unknown='ignore'), cat_cols)
@@ -66,24 +66,24 @@ jobs:
           with open('models/preprocessor.pkl', 'wb') as f:
               pickle.dump(prep, f)
 
-          # إنشاء نموذج وهمي يتطابق مع أبعاد الخصائص الناتجة من الـ Preprocessor
+          # Create a dummy model matching the output dimensions of the Preprocessor
           model = DummyClassifier().fit(X_trans, [1])
           with open('models/model.pkl', 'wb') as f:
               pickle.dump(model, f)
           "
 
-      # 5. تشغيل اختبارات الوحدة عبر pytest
+      # 5. Run unit tests via pytest
       - name: Run unit tests
         env:
           PYTHONPATH: .
         run: |
           pytest tests/
 
-      # 6. إعداد Docker Buildx
+      # 6. Set up Docker Buildx
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # 7. بناء صورة Docker لتأكيد سلامتها
+      # 7. Build Docker image to verify its integrity
       - name: Build Docker image
         uses: docker/build-push-action@v5
         with:
