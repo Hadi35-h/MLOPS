@@ -19,14 +19,14 @@
 
 ## 🎯 Project Overview
 
-**Olist Late Delivery Prediction** هو مشروع **MLOps** شامل يحوّل نوت بوك التنبؤ بتأخير شحنات طلبات **Olist** إلى خدمة إنتاجية حية (Inference Pipeline) قائمة على **FastAPI**، قابلة للتوسع والمراقبة. يدمج الـ **ML pipeline** الكامل من جمع البيانات وحتى النشر والمراقبة (MLOps):
+**Olist Late Delivery Prediction** is a comprehensive MLOps project that transforms a Jupyter notebook for predicting Olist order delivery delays into a **live inference pipeline** built on **FastAPI** — scalable and monitorable. It integrates the full ML pipeline from data collection to deployment and monitoring:
 
-- **Data Validation** — فحص البيانات المدخلة قبل الاستخدام.
-- **Preprocessing** — تنظيف وتجهيز البيانات (التعامل مع القيم الناقصة، تحويل التواريخ، ترميز الفئات).
-- **Model Training** — تدريب نموذج RandomForestClassifier مع تسجيل التجارب في MLflow.
-- **Model Serving** — خدمة REST API عبر FastAPI / Uvicorn لإرجاع التنبؤات في الوقت الحقيقي.
-- **Monitoring** — اكتشاف Data Drift باستخدام Evidently.
-- **CI/CD** — اختبارات أوتوماتيكية وتوثيق برمجيات.
+- **Data Validation** — Validate input data before use (Great Expectations integration).
+- **Preprocessing** — Data cleaning and feature engineering (missing value imputation, date conversion, categorical encoding).
+- **Model Training** — Train a RandomForestClassifier with experiment tracking in MLflow.
+- **Model Serving** — Live REST API via FastAPI / Uvicorn for real-time predictions.
+- **Monitoring** — Detect Data Drift using Evidently.
+- **CI/CD** — Automated testing and code quality with pre-commit & GitHub Actions.
 
 ---
 
@@ -42,8 +42,10 @@
 8. [Docker Deployment](#-docker-deployment)
 9. [MLflow Tracking](#-mlflow-tracking)
 10. [Data Drift Monitoring](#-data-drift-monitoring)
-11. [Configuration](#-configuration)
-12. [Pre-commit Hooks](#-pre-commit-hooks)
+11. [CI/CD Pipeline](#-cicd-pipeline)
+12. [DVC Integration](#-dvc-integration)
+13. [Configuration](#-configuration)
+14. [Pre-commit Hooks](#-pre-commit-hooks)
 
 ---
 
@@ -52,37 +54,43 @@
 ```text
 olist-mlops/
 ├── app/
-│   ├── main.py          # FastAPI application — endpoints: /, /healthcheck, /predict
-│   └── schemas.py       # Pydantic models — OrderInput, PredictionOutput
+│   ├── main.py              # FastAPI application — endpoints: /, /healthcheck, /predict
+│   └── schemas.py           # Pydantic models — OrderInput, PredictionOutput
 ├── src/
 │   ├── __init__.py
-│   ├── preprocessing.py # Data cleaning & preprocessing functions
-│   ├── data_validator.py# Input data validation (negative values, missing data)
-│   ├── train.py          # Training pipeline — RandomForest + MLflow logging
-│   ├── predict.py        # Inference pipeline — loads model & preprocessor, runs prediction
-│   ├── main.py           # Alternative FastAPI app — endpoints: /health, /predict
-│   ├── mlflow_tracker.py # Registers model + preprocessor + config as MLflow artifacts
-│   ├── monitoring.py     # Data drift report generation (Evidently DataDriftPreset)
-│   ├── evidently_report.py # Evidently report with random reference/current data
-│   └── utils.py          # Logging setup (file + console)
+│   ├── preprocessing.py     # Data cleaning & preprocessing functions
+│   ├── data_validator.py    # Input data validation (negative values, missing data)
+│   ├── validate_data.py     # Great Expectations data quality validation
+│   ├── train.py             # Training pipeline — RandomForest + MLflow logging
+│   ├── predict.py           # Inference pipeline — loads model & preprocessor, runs prediction
+│   ├── main.py              # Alternative FastAPI app — endpoints: /health, /predict
+│   ├── mlflow_tracker.py    # Registers model + preprocessor + config as MLflow artifacts
+│   ├── monitoring.py        # Data drift report generation (Evidently DataDriftPreset)
+│   ├── evaluate_monitoring.py # Evaluate prediction logs against reference data
+│   ├── evidently_report.py  # Evidently report with random reference/current data
+│   └── utils.py             # Logging setup (file + console)
 ├── tests/
-│   ├── test_api.py       # Integration tests for src/main.py (/health, /predict)
-│   └── test_pipeline.py  # Integration tests for app/main.py (/, /predict)
+│   ├── test_api.py          # Integration tests for src/main.py (/health, /predict)
+│   └── test_pipeline.py     # Integration tests for app/main.py (/, /predict)
+├── .github/
+│   └── workflows/
+│       └── ci.yml           # CI/CD pipeline configuration (GitHub Actions)
 ├── config/
-│   └── config.yaml       # Paths, model info, data schema, model params
+│   └── config.yaml          # Paths, model info, data schema, model params
 ├── data/
-│   ├── raw/              # Raw Olist datasets
-│   └── processed/        # Train/test splits
+│   ├── raw/                 # Raw Olist datasets
+│   └── processed/           # Train/test/val splits
 ├── models/
-│   ├── model.pkl         # Trained model (joblib)
-│   └── preprocessor.pkl  # Preprocessing pipeline (ColumnTransformer, joblib)
-├── artifacts/            # MLflow artifacts, logs, drift reports
-├── notebooks/            # Exploratory analysis notebooks
-├── requirements.txt      # All Python dependencies
-├── Dockerfile            # Container image build
-├── docker-compose.yml    # Multi-service orchestration
-├── .pre-commit-config.yaml
-├── .env                  # Environment variables (DB credentials)
+│   ├── model.pkl            # Trained model (joblib)
+│   └── preprocessor.pkl     # Preprocessing pipeline (ColumnTransformer, joblib)
+├── artifacts/               # MLflow artifacts, logs, drift reports
+├── notebooks/               # Exploratory analysis notebooks
+├── .gitignore               # Exclude venv, pycache, model binaries, etc.
+├── .pre-commit-config.yaml  # Pre-commit hooks (black, trailing whitespace, etc.)
+├── .env                     # Environment variables (DB credentials)
+├── requirements.txt         # All Python dependencies
+├── Dockerfile               # Container image build
+├── docker-compose.yml       # Multi-service orchestration
 └── README.md
 ```
 
@@ -151,12 +159,13 @@ olist-mlops/
 | Stage | Module | Description |
 |---|---|---|
 | 1. Validation | `src/data_validator.py` | Validates input dict for negative numerics & missing values |
+| 1b. Data Quality | `src/validate_data.py` | Great Expectations validation against raw CSV data |
 | 2. Preprocessing | `src/preprocessing.py` | Parses date columns, imputes missing values |
 | 3. Training | `src/train.py` | Trains RandomForest, logs to MLflow, saves model.pkl |
 | 4. Artifact Logging | `src/mlflow_tracker.py` | Registers model + preprocessor + config in MLflow |
 | 5. Inference | `src/predict.py` | Loads artifacts, applies preprocessor, runs model.predict |
 | 6. Serving | `app/main.py` / `src/main.py` | FastAPI endpoints for health check & prediction |
-| 7. Monitoring | `src/monitoring.py` | Evidently data drift report generation |
+| 7. Monitoring | `src/monitoring.py` / `src/evaluate_monitoring.py` | Evidently data drift report generation |
 
 ---
 
@@ -192,6 +201,7 @@ The API expects the following input schema (defined in `config/config.yaml` and 
 
 - Python 3.11+
 - pip / venv
+- Docker & Docker Compose (optional, for containerized deployment)
 
 ### Steps
 
@@ -277,7 +287,7 @@ print(result)  # {"prediction": 1}
 
 ## 🔌 API Endpoints
 
-### `GET /` (app/main.py only)
+### `GET /` (app/main.py)
 
 Root endpoint.
 
@@ -286,7 +296,7 @@ curl http://localhost:8000/
 # {"message": "API is up and running"}
 ```
 
-### `GET /health` (src/main.py only)
+### `GET /health` (src/main.py)
 
 Health check endpoint.
 
@@ -295,7 +305,7 @@ curl http://localhost:8000/health
 # {"status": "ok"}
 ```
 
-### `GET /healthcheck` (app/main.py only)
+### `GET /healthcheck` (app/main.py)
 
 Health check with model status.
 
@@ -381,6 +391,17 @@ This starts four services:
 |---|---|---|
 | `MLFLOW_TRACKING_URI` | `http://mlflow:5000` | MLflow server URL inside Docker network |
 
+### Useful Docker Commands
+
+```bash
+docker-compose up --build -d       # Start all services in detached mode
+docker compose ps                 # List running containers
+docker logs olist_mlops_api       # View API logs
+
+# Stop all services
+docker-compose down
+```
+
 ---
 
 ## 📊 MLflow Tracking
@@ -403,7 +424,7 @@ The project integrates with MLflow for experiment tracking and model registry.
 
 ## 🔍 Data Drift Monitoring
 
-### Generate Drift Report
+### Generate Drift Report (from CSV files)
 
 ```python
 from src.monitoring import generate_drift_report
@@ -415,9 +436,96 @@ generate_drift_report(
 )
 ```
 
+### Evaluate Prediction Logs (from API logs)
+
+```python
+from src.evaluate_monitoring import evaluate_predictions
+
+evaluate_predictions()
+```
+
+This reads prediction logs from `logs/prediction_logs.jsonl`, compares them against
+reference data from `data/processed/train.csv`, and generates a drift report at
+`reports/data_drift_report.html`. It automatically samples large datasets (up to
+1000 rows) for efficient drift detection.
+
 ### Evidently UI
 
-When running via `docker-compose`, the Evidently UI is available at `http://localhost:8080`. The `src/evidently_report.py` script generates a `DataDriftPreset` report and pushes it to the Evidently workspace.
+When running via `docker-compose`, the Evidently UI is available at `http://localhost:8080`.
+The `src/evidently_report.py` script generates a `DataDriftPreset` report and pushes it
+to the Evidently workspace.
+
+---
+
+## 🔄 CI/CD Pipeline
+
+The project uses GitHub Actions for continuous integration and pre-commit for code quality.
+
+### GitHub Actions Workflow (`.github/workflows/ci.yml`)
+
+The CI pipeline runs on every push/PR to `main` or `master` and includes:
+
+| Step | Action |
+|---|---|
+| 1. Checkout | Fetch repository code |
+| 2. Set up Python | Python 3.11 environment |
+| 3. Install dependencies | `pip install -r requirements.txt` + test deps |
+| 4. Create dummy models | Generate consistent model for test environment |
+| 5. Run tests | `pytest tests/` with `PYTHONPATH=.` |
+| 6. Set up Docker Buildx | Prepare Docker build environment |
+| 7. Build Docker image | Verify Dockerfile builds successfully |
+
+### Pre-commit Hooks
+
+Pre-commit hooks run automatically on every `git commit`:
+
+```bash
+# Install hooks (already configured in .pre-commit-config.yaml)
+pre-commit install
+
+# Run hooks manually on all files
+pre-commit run --all-files
+```
+
+| Hook | Purpose |
+|---|---|
+| `trailing-whitespace` | Remove trailing whitespace |
+| `end-of-file-fixer` | Ensure files end with a newline |
+| `check-yaml` | Validate YAML syntax |
+| `check-added-large-files` | Block files > 10 MB |
+| `black` | Code formatting (excludes `venv/`, `artifacts/`) |
+
+---
+
+## 📦 DVC Integration
+
+The project uses [DVC (Data Version Control)](https://dvc.org/) to version-control large
+model artifacts and datasets.
+
+### Key DVC Files
+
+| File | Description |
+|---|---|
+| `artifacts/final_model.joblib.dvc` | DVC pointer for the trained model |
+| `artifacts/preprocessor.joblib.dvc` | DVC pointer for the preprocessor |
+| `data/raw.dvc` | DVC pointer for raw data |
+| `.dvc/config` | DVC configuration |
+
+### DVC Commands
+
+```bash
+# Track a file with DVC
+dvc add artifacts/final_model.joblib
+
+# Pull data/artifacts from remote storage
+dvc pull
+
+# Push to remote storage
+dvc push
+
+# Create a DVC pipeline stage
+dvc stage add -n train -d src/train.py -d data/ -o models/model.pkl python -m src.train
+```
 
 ---
 
@@ -474,30 +582,14 @@ When no preprocessor is provided, the `Predictor.predict()` method applies inlin
 
 ---
 
-## 🔒 Pre-commit Hooks
-
-The project uses pre-commit for code quality:
-
-```bash
-# Install hooks
-pre-commit install
-
-# Run hooks manually
-pre-commit run --all-files
-```
-
-Configured hooks:
-
-| Hook | Purpose |
-|---|---|
-| `trailing-whitespace` | Remove trailing whitespace |
-| `end-of-file-fixer` | Ensure files end with a newline |
-| `check-yaml` | Validate YAML syntax |
-| `check-added-large-files --maxkb=10000` | Block files > 10 MB |
-| `black` | Code formatting (excludes `venv/`, `artifacts/`) |
-
----
-
 ## 📝 License
 
 MIT License — see `LICENSE` file for details.
+
+<!-- Links for Quick Links section -->
+[1]: https://github.com/Hadi35-h/MLOPS
+[2]: http://localhost:8000/docs
+[3]: http://localhost:8000/redoc
+[4]: http://localhost:5000
+[5]: http://localhost:8080
+[6]: https://hub.docker.com/
