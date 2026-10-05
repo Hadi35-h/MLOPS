@@ -14,7 +14,7 @@ def log_model_to_mlflow(config_path: str = "config/config.yaml"):
     with mlflow.start_run(run_name="Inference_Artifacts_Logging"):
         # Log parameters
         mlflow.log_params(config["model_params"])
-        mlflow.log_param("model_type", config["model_info"]["name"])
+        mlflow.log_param("model_name", config["model_info"]["name"])
         mlflow.log_param("version", config["model_info"]["version"])
 
         # Log artifacts (model, preprocessor, and config file)
