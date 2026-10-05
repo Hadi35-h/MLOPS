@@ -10,7 +10,7 @@ paths:
 
 # Model information
 model_info:
-  name: "RandomForestClassifier"
+  name: "RandomForest_Delivery_Prediction"
   version: "1.0.0"
 
 # Expected input schema
